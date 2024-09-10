@@ -19,9 +19,12 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 
+
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include <stdio.h>
+#include "keyboard_pass.h"
+#include "ring_buffer.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -43,6 +46,13 @@
 UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
+#define USART2_BUFFER_SIZE 10
+uint8_t usart2_buffer[USART2_BUFFER_SIZE];
+ring_buffer_t usart2_rb;
+uint8_t usart2_rx;
+
+uint32_t left_toggles = 0;
+uint32_t left_last_press_tick = 0;
 
 /* USER CODE END PV */
 
@@ -63,9 +73,52 @@ int _write(int file, char *ptr, int len)
   return len;
 }
 
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
+{
+  /* Data received in USART2 */
+  if (huart->Instance == USART2) {
+	  usart2_rx = USART2->RDR; // leyendo el byte recibido de USART2
+	  ring_buffer_write(&usart2_rb, usart2_rx); // put the data received in buffer
+	  //HAL_UART_Receive_IT(&huart2, &usart2_rx, 1); // enable interrupt to continue receiving
+	  ATOMIC_SET_BIT(USART2->CR1, USART_CR1_RXNEIE); // usando un funcion mas liviana para reducir memoria
+  }
+}
+
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
 
+}
+
+void low_power_mode()
+{
+#define AWAKE_TIME (10 * 1000) // 10 segundos
+	static uint32_t sleep_tick = AWAKE_TIME;
+
+	if (sleep_tick > HAL_GetTick()) {
+		return;
+	}
+	printf("Sleeping\r\n");
+	sleep_tick = HAL_GetTick() + AWAKE_TIME;
+
+	RCC->AHB1SMENR  = 0x0;
+	RCC->AHB2SMENR  = 0x0;
+	RCC->AHB3SMENR  = 0x0;
+
+	RCC->APB1SMENR1 = 0x0;
+	RCC->APB1SMENR2 = 0x0;
+	RCC->APB2SMENR  = 0x0;
+
+	/*Suspend Tick increment to prevent wakeup by Systick interrupt.
+	Otherwise the Systick interrupt will wake up the device within 1ms (HAL time base)*/
+	HAL_SuspendTick();
+
+	/* Enter Sleep Mode , wake up is done once User push-button is pressed */
+	HAL_PWR_EnterSLEEPMode(PWR_MAINREGULATOR_ON, PWR_SLEEPENTRY_WFI);
+
+	/* Resume Tick interrupt if disabled prior to SLEEP mode entry */
+	HAL_ResumeTick();
+
+	printf("Awake\r\n");
 }
 /* USER CODE END 0 */
 
@@ -100,7 +153,7 @@ int main(void)
   MX_GPIO_Init();
   MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
-
+  ring_buffer_init(&usart2_rb, usart2_buffer, USART2_BUFFER_SIZE);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -108,6 +161,16 @@ int main(void)
   printf("Starting...\r\n");
   while (1)
   {
+	  if (ring_buffer_is_full(&usart2_rb) != 0) {
+		  printf("Received:\r\n");
+		  while (ring_buffer_is_empty(&usart2_rb) == 0) {
+			  uint8_t data;
+			  ring_buffer_read(&usart2_rb, &data);
+			  HAL_UART_Transmit(&huart2, &data, 1, 10);
+		  }
+		  printf("\r\n");
+	  }
+	  low_power_mode();
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -181,7 +244,7 @@ static void MX_USART2_UART_Init(void)
 
   /* USER CODE END USART2_Init 1 */
   huart2.Instance = USART2;
-  huart2.Init.BaudRate = 115200;
+  huart2.Init.BaudRate = 256000;
   huart2.Init.WordLength = UART_WORDLENGTH_8B;
   huart2.Init.StopBits = UART_STOPBITS_1;
   huart2.Init.Parity = UART_PARITY_NONE;
@@ -217,7 +280,7 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOC_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(SYSTEM_LED_GPIO_Port, SYSTEM_LED_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(ROW_1_GPIO_Port, ROW_1_Pin, GPIO_PIN_SET);
@@ -225,8 +288,8 @@ static void MX_GPIO_Init(void)
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOB, ROW_2_Pin|ROW_4_Pin|ROW_3_Pin, GPIO_PIN_SET);
 
-  /*Configure GPIO pins : SYSTEM_LED_Pin ROW_1_Pin */
-  GPIO_InitStruct.Pin = SYSTEM_LED_Pin|ROW_1_Pin;
+  /*Configure GPIO pins : LD2_Pin ROW_1_Pin */
+  GPIO_InitStruct.Pin = LD2_Pin|ROW_1_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
