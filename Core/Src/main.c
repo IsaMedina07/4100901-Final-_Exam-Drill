@@ -55,6 +55,8 @@ uint16_t usart2_buffer[USART2_BUFFER_SIZE];
 ring_buffer_t usart2_rb;
 uint16_t usart2_rx;
 
+uint8_t password[10];
+
 uint32_t left_toggles = 0;
 uint32_t left_last_press_tick = 0;
 
@@ -86,15 +88,17 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 	  ring_buffer_write(&usart2_rb, usart2_rx); // put the data received in buffer
 	  //HAL_UART_Receive_IT(&huart2, &usart2_rx, 1); // enable interrupt to continue receiving
 	  ATOMIC_SET_BIT(USART2->CR1, USART_CR1_RXNEIE); // usando un funcion mas liviana para reducir memoria
-	  printf(usart2_buffer);
   }
 }
 
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
 	uint8_t key_pressed = keypad_scan(GPIO_Pin);
+	static uint8_t cont = 0;
 	if (key_pressed != 0xFF) {
+		password[cont] = key_pressed;
 		printf("Pressed: %c\r\n", key_pressed);
+		cont++;
 		return;
 	}
 }
@@ -107,6 +111,7 @@ void low_power_mode()
 	if (sleep_tick > HAL_GetTick()) {
 		return;
 	}
+	printf(password);
 	printf("Sleeping\r\n");
 	sleep_tick = HAL_GetTick() + AWAKE_TIME;
 
