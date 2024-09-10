@@ -11,16 +11,16 @@
 #include <stdint.h>
 
 typedef struct ring_buffer_ {
-	uint8_t *buffer;
-	uint8_t head;
-	uint8_t tail;
-	uint8_t is_full;
+	uint16_t *buffer;
+	uint16_t head;
+	uint16_t tail;
+	uint16_t is_full;
 
-	uint8_t capacity;
+	uint16_t capacity;
 
 } ring_buffer_t;
 
-void ring_buffer_init(ring_buffer_t *rb, uint8_t *mem_add, uint8_t capacity);
+void ring_buffer_init(ring_buffer_t *rb, uint16_t *mem_add, uint16_t capacity);
 void ring_buffer_reset(ring_buffer_t *rb);
 uint8_t ring_buffer_size(ring_buffer_t *rb);
 uint8_t ring_buffer_is_full(ring_buffer_t *rb);
