@@ -27,6 +27,7 @@
 
 #include "keyboard_pass.h"
 #include "ring_buffer.h"
+#include "blinking_led.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -180,10 +181,9 @@ int main(void)
   /* USER CODE BEGIN 2 */
   ring_buffer_init(&usart2_rb, usart2_buffer, USART2_BUFFER_SIZE);
 
-//  ssd1306_Init();
-//  ssd1306_SetCursor(25, 30);
-//  ssd1306_WriteString("Hoole", Font_7x10, White);
-//  ssd1306_UpdateScreen();
+	ssd1306_Init();
+	ssd1306_SetCursor(25, 30);
+	ssd1306_UpdateScreen();
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -203,36 +203,21 @@ int main(void)
 			  };
 
 			  if(keyboard_ID(data)){
-				  printf("Pressed: %c\r\n", data);
+				  printf("Correct password");
+				  ssd1306_WriteString("Success!", Font_7x10, White);
+				  ssd1306_UpdateScreen();
+				  ssd1306_FillRectangle(0, 50, 130, 20, Black);
 			  }else if (keyboard_ID(data) == 0){
 				  printf("Password error");
+				  ssd1306_WriteString("Error!", Font_7x10, White);
+				  ssd1306_UpdateScreen();
+				  ssd1306_FillRectangle(0, 50, 130, 20, Black);
 			  }
 		  }
 		  printf("\r\n");
 		  enter = 0;
+		  //ring_buffer_reset(usart2_rb);
 	  }
-
-	  /*if(ring_buffer_size(&rb_usart2) != 0){
-		  uint8_t size = ring_buffer_size(&rb_usart2);
-		  size = size+0x30;
-
-		  if(ring_buffer_is_full(&rb_usart2)){
-
-			  uint8_t data[10];
-			  for (uint8_t i = 0; i <= 10; i++){
-				  ring_buffer_read(&rb_usart2, &key);
-				  data[i] = key;
-				  //HAL_UART_Transmit(&huart2, &byte, 1, 10);
-			  };
-			  //HAL_UART_Transmit(&huart2, &size, 1, 10);
-
-			  if(keyboard_ID(data) && enter == 1){
-				  printf("Pressed: %c\r\n", data);
-			  }else if (enter == 1 && keyboard_ID(data) == 0){
-				  printf("Password error");
-			  }
-		  }
-	  }*/
 	  low_power_mode();
     /* USER CODE END WHILE */
 
@@ -307,7 +292,7 @@ static void MX_I2C1_Init(void)
 
   /* USER CODE END I2C1_Init 1 */
   hi2c1.Instance = I2C1;
-  hi2c1.Init.Timing = 0x10909CEC;
+  hi2c1.Init.Timing = 0x10D19CE4;
   hi2c1.Init.OwnAddress1 = 0;
   hi2c1.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
   hi2c1.Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;
