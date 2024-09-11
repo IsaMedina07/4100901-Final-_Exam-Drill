@@ -8,12 +8,13 @@
 #include "main.h"
 
 uint8_t toggles = 6;
+uint8_t is_correct = 1;
 
 uint8_t blinking_led(void){
 
 	uint8_t led = 0xFF;
 
-	if (is_correct){ //verifica si la clave es correcta con la bandera is_correct
+	if (is_correct == 1){ //verifica si la clave es correcta con la bandera is_correct
 			 toggles = 6;
 
 		static uint8_t blinking = 0;

@@ -108,10 +108,12 @@ int main(void)
   MX_I2C1_Init();
 
   /* USER CODE BEGIN 2 */
+
 	ssd1306_Init();
 	ssd1306_SetCursor(25, 30);
 	ssd1306_WriteString("Hello World!", Font_7x10, White);
 	ssd1306_UpdateScreen();
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -126,7 +128,8 @@ int main(void)
 		  HAL_UART_Transmit(&huart2, "Correct Password\r\n",18, 10);
 		  ssd1306_WriteString("Correct", Font_7x10, White);
 	  }else {
-
+		 HAL_UART_Transmit(&huart2, "Wrong Password\r\n",16, 10);
+		 ssd1306_WriteString("Error", Font_7x10, White);
 	  }
   }
   /* USER CODE END 3 */
