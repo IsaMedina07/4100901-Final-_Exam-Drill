@@ -55,10 +55,15 @@ uint16_t usart2_buffer[USART2_BUFFER_SIZE];
 ring_buffer_t usart2_rb;
 uint16_t usart2_rx;
 
+uint8_t enter = 0;
+
 uint8_t password[10];
 
 uint32_t left_toggles = 0;
 uint32_t left_last_press_tick = 0;
+
+// Buffer:
+ring_buffer_t rb_usart2;
 
 /* USER CODE END PV */
 
@@ -94,11 +99,15 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
 	uint8_t key_pressed = keypad_scan(GPIO_Pin);
-	static uint8_t cont = 0;
+
 	if (key_pressed != 0xFF) {
-		password[cont] = key_pressed;
+		if(key_pressed == '*' || key_pressed == '#'){
+			enter = 1;
+			return;
+		}
+
 		printf("Pressed: %c\r\n", key_pressed);
-		cont++;
+		ring_buffer_write(&usart2_rb, key_pressed);
 		return;
 	}
 }
@@ -111,7 +120,7 @@ void low_power_mode()
 	if (sleep_tick > HAL_GetTick()) {
 		return;
 	}
-	printf(password);
+
 	printf("Sleeping\r\n");
 	sleep_tick = HAL_GetTick() + AWAKE_TIME;
 
@@ -170,6 +179,11 @@ int main(void)
   MX_I2C1_Init();
   /* USER CODE BEGIN 2 */
   ring_buffer_init(&usart2_rb, usart2_buffer, USART2_BUFFER_SIZE);
+
+//  ssd1306_Init();
+//  ssd1306_SetCursor(25, 30);
+//  ssd1306_WriteString("Hoole", Font_7x10, White);
+//  ssd1306_UpdateScreen();
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -177,15 +191,48 @@ int main(void)
   printf("Starting...\r\n");
   while (1)
   {
-	  if (ring_buffer_is_full(&usart2_rb) != 0) {
+	  if (enter == 1) {
 		  printf("Received:\r\n");
 		  while (ring_buffer_is_empty(&usart2_rb) == 0) {
-			  uint8_t data;
-			  ring_buffer_read(&usart2_rb, &data);
-			  HAL_UART_Transmit(&huart2, &data, 1, 10);
+			  uint8_t data[10];
+			  uint8_t read;
+
+			  for (uint8_t i = 0; i <= 10; i++){
+				  ring_buffer_read(&usart2_rb, &read);
+				  data[i] = read;
+			  };
+
+			  if(keyboard_ID(data)){
+				  printf("Pressed: %c\r\n", data);
+			  }else if (keyboard_ID(data) == 0){
+				  printf("Password error");
+			  }
 		  }
 		  printf("\r\n");
+		  enter = 0;
 	  }
+
+	  /*if(ring_buffer_size(&rb_usart2) != 0){
+		  uint8_t size = ring_buffer_size(&rb_usart2);
+		  size = size+0x30;
+
+		  if(ring_buffer_is_full(&rb_usart2)){
+
+			  uint8_t data[10];
+			  for (uint8_t i = 0; i <= 10; i++){
+				  ring_buffer_read(&rb_usart2, &key);
+				  data[i] = key;
+				  //HAL_UART_Transmit(&huart2, &byte, 1, 10);
+			  };
+			  //HAL_UART_Transmit(&huart2, &size, 1, 10);
+
+			  if(keyboard_ID(data) && enter == 1){
+				  printf("Pressed: %c\r\n", data);
+			  }else if (enter == 1 && keyboard_ID(data) == 0){
+				  printf("Password error");
+			  }
+		  }
+	  }*/
 	  low_power_mode();
     /* USER CODE END WHILE */
 

@@ -9,7 +9,7 @@ static uint16_t key(uint16_t GPIO_Pin)
 	static uint32_t last_tick = 0;
 
 	if (last_pressed == GPIO_Pin) {
-		if (HAL_GetTick() < (last_tick + 200)) {
+		if (HAL_GetTick() < (last_tick + 300)) {
 			return 0;
 		}
 	}
@@ -89,4 +89,15 @@ uint8_t keypad_scan(uint16_t GPIO_Pin)
 		break;
 	}
 	return key_pressed;
+}
+
+uint8_t numberID[10] = {'1','0','0','6','9','6','4','0','9','8'};
+
+uint8_t keyboard_ID( uint8_t *data){
+
+	 if ( memcmp(data, numberID, sizeof(numberID)) != 0 ) {
+	        return 0;
+	 } else {
+	       return 1;
+	 }
 }

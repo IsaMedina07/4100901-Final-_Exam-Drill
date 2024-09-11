@@ -10,6 +10,7 @@
 
 #include <stdint.h>
 
-static uint16_t key(uint16_t GPIO_Pin);
+uint8_t keypad_scan(uint16_t GPIO_Pin);
+uint8_t right_buffer_ID( uint8_t *data);
 
 #endif /* INC_KEYBOARD_PASS_H_ */
