@@ -26,8 +26,9 @@
 #include "ssd1306_fonts.h"
 
 #include "keyboard_pass.h"
+#include "blinking.h"
 #include "ring_buffer.h"
-#include "blinking_led.h"
+
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -56,6 +57,7 @@ uint16_t usart2_buffer[USART2_BUFFER_SIZE];
 ring_buffer_t usart2_rb;
 uint16_t usart2_rx;
 
+// Creamos una bandera para saber cuando el usuario presiona # o *
 uint8_t enter = 0;
 
 uint8_t password[10];
@@ -102,8 +104,14 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 	uint8_t key_pressed = keypad_scan(GPIO_Pin);
 
 	if (key_pressed != 0xFF) {
-		if(key_pressed == '*' || key_pressed == '#'){
+		// Al presionar # o * se cambia la variable enter a 1 y se sale del callback
+		if(key_pressed == '#'){
+			printf("ENTER: %c\r\n", key_pressed);
 			enter = 1;
+			return;
+		}else if(key_pressed == '*'){
+			ring_buffer_reset(&usart2_rb);
+			printf("RESET: %c\r\n", key_pressed);
 			return;
 		}
 
@@ -182,15 +190,19 @@ int main(void)
   ring_buffer_init(&usart2_rb, usart2_buffer, USART2_BUFFER_SIZE);
 
 	ssd1306_Init();
-	ssd1306_SetCursor(25, 30);
+	ssd1306_SetCursor(45, 30);
+	ssd1306_WriteString("Hello!", Font_7x10, White);
 	ssd1306_UpdateScreen();
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   printf("Starting...\r\n");
+
+  uint8_t cont = 0;
   while (1)
   {
+	  // Cuando la bandera se activa (se presiona * o #)
 	  if (enter == 1) {
 		  printf("Received:\r\n");
 		  while (ring_buffer_is_empty(&usart2_rb) == 0) {
@@ -202,21 +214,47 @@ int main(void)
 				  data[i] = read;
 			  };
 
+			  // Iniciamos el ssd1306:
+			  ssd1306_Init();
+			  ssd1306_SetCursor(45, 30);
+			  ssd1306_UpdateScreen();
+
 			  if(keyboard_ID(data)){
 				  printf("Correct password");
+
+				  ssd1306_SetCursor(40, 30);
+				  ssd1306_UpdateScreen();
+
+				  // Si hay algo escrito, se borra:
+				  ssd1306_FillRectangle(0, 50, 130, 20, Black);
+				  ssd1306_UpdateScreen();
+
+				  // Se escribe el mensaje
 				  ssd1306_WriteString("Success!", Font_7x10, White);
 				  ssd1306_UpdateScreen();
-				  ssd1306_FillRectangle(0, 50, 130, 20, Black);
+
+				  // Se enciende el led 3 veces:
+//				  blinking_led();
+				  cont = 1;
+
 			  }else if (keyboard_ID(data) == 0){
 				  printf("Password error");
+				  ssd1306_FillRectangle(0, 50, 130, 20, Black);
+				  ssd1306_UpdateScreen();
+
 				  ssd1306_WriteString("Error!", Font_7x10, White);
 				  ssd1306_UpdateScreen();
-				  ssd1306_FillRectangle(0, 50, 130, 20, Black);
+
+				  // Si el led está encendido, se apaga completamente
+				  HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_RESET);
 			  }
 		  }
 		  printf("\r\n");
-		  enter = 0;
 		  //ring_buffer_reset(usart2_rb);
+	  }
+	  enter = 0;
+	  if(cont != 0){
+		  cont = blinking_led_ret();
 	  }
 	  low_power_mode();
     /* USER CODE END WHILE */

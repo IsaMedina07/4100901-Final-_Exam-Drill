@@ -10,6 +10,7 @@
 
 #include <stdint.h>
 
+void blinking_led(void);
 uint8_t keypad_scan(uint16_t GPIO_Pin);
 uint8_t right_buffer_ID( uint8_t *data);
 
