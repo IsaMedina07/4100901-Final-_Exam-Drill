@@ -1,6 +1,10 @@
 # 4100901-Final_Exam-Drill
 Please fork this repo, then clone it into your computer, and place your work for the Final exam here.
 
+Estudiantes:
+Paulina Ruiz Bonilla.
+Maria Isabel Aristizabal Medina.
+
 ## Criterio de Evaluación 
 
 * Funcionalidad: 80% (valor equivalente para cada requerimiento)
