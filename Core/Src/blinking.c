@@ -20,9 +20,9 @@ uint8_t blinking_led_ret(uint8_t *toggles){
 		if (*toggles > 0) {
 			tick = HAL_GetTick() + 400;
 			HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
-			*toggles--;
+			(*toggles)--;
 		} else {
-			HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_SET);
+			HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_RESET);
 			return 0;
 		}
 	}
