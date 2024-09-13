@@ -264,8 +264,9 @@ int main(void)
 	  }
 	  if(cont != 0){
 		  cont = blinking_led_ret(&toggle);
-	  }
+	  }else{
 	  low_power_mode();
+	  }
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
