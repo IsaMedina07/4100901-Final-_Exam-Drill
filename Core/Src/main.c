@@ -111,6 +111,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 			return;
 		}else if(key_pressed == '*'){
 			ring_buffer_reset(&usart2_rb);
+			HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_RESET);
 			printf("RESET: %c\r\n", key_pressed);
 
 			// Reseteamos el mensaje igualmente:
