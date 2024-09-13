@@ -112,6 +112,12 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 		}else if(key_pressed == '*'){
 			ring_buffer_reset(&usart2_rb);
 			printf("RESET: %c\r\n", key_pressed);
+
+			// Reseteamos el mensaje igualmente:
+			ssd1306_FillRectangle(37, 50, 97, 20, Black);
+			ssd1306_SetCursor(45, 30);
+			ssd1306_WriteString("Hello!", Font_7x10, White);
+			ssd1306_UpdateScreen();
 			return;
 		}
 
@@ -200,6 +206,7 @@ int main(void)
   printf("Starting...\r\n");
 
   uint8_t cont = 0;
+  uint8_t toggle = 0;
   while (1)
   {
 	  // Cuando la bandera se activa (se presiona * o #)
@@ -214,36 +221,37 @@ int main(void)
 				  data[i] = read;
 			  };
 
-			  // Iniciamos el ssd1306:
-			  ssd1306_Init();
-			  ssd1306_SetCursor(45, 30);
-			  ssd1306_UpdateScreen();
-
 			  if(keyboard_ID(data)){
+				  cont = 0;
+				  toggle = 0;
 				  printf("Correct password");
 
-				  ssd1306_SetCursor(40, 30);
-				  ssd1306_UpdateScreen();
-
 				  // Si hay algo escrito, se borra:
-				  ssd1306_FillRectangle(0, 50, 130, 20, Black);
+				  ssd1306_FillRectangle(37, 50, 97, 20, Black);
+				  ssd1306_SetCursor(40, 30);
 				  ssd1306_UpdateScreen();
 
 				  // Se escribe el mensaje
 				  ssd1306_WriteString("Success!", Font_7x10, White);
 				  ssd1306_UpdateScreen();
 
-				  // Se enciende el led 3 veces:
-//				  blinking_led();
-				  cont = 1;
+				  // Sen enciende el led:
+				  blinking_on_led();
 
-			  }else if (keyboard_ID(data) == 0){
+			  }else{
 				  printf("Password error");
-				  ssd1306_FillRectangle(0, 50, 130, 20, Black);
+
+				  ssd1306_FillRectangle(37, 50, 97, 20, Black);
+				  ssd1306_SetCursor(45, 30);
 				  ssd1306_UpdateScreen();
 
 				  ssd1306_WriteString("Error!", Font_7x10, White);
 				  ssd1306_UpdateScreen();
+
+				  // Se enciende el led 3 veces si la contraseña es incorrecta:
+				  //blinking_led();
+				  cont = 1;
+				  toggle = 6;
 
 				  // Si el led está encendido, se apaga completamente
 				  HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_RESET);
@@ -251,10 +259,11 @@ int main(void)
 		  }
 		  printf("\r\n");
 		  //ring_buffer_reset(usart2_rb);
+
+		  enter = 0;
 	  }
-	  enter = 0;
 	  if(cont != 0){
-		  cont = blinking_led_ret();
+		  cont = blinking_led_ret(&toggle);
 	  }
 	  low_power_mode();
     /* USER CODE END WHILE */

@@ -11,6 +11,6 @@
 #include <stdint.h>
 
 void blinking_led(void);
-uint8_t blinking_led_ret(void);
+uint8_t blinking_led_ret(uint8_t *toggles);
 
 #endif /* INC_BLINKING_H_ */
